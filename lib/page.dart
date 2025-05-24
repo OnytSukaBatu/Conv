@@ -15,22 +15,47 @@ class MainPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Center(
-        child: Obx(
-          () => Text(
-            '${getx.xInt.value} / ${getx.xLength.value}',
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Center(
+          child: Obx(
+            () => Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  getx.xPath.value.isEmpty ? 'Tambahkan Lokasi Hasil Converter' : 'Setelah Converter Selesai File Png Terletak Pada:\n${getx.xPath.value}',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  getx.xLength.value == 0 ? 'Pada Saat Proses Converter\nAgar Optimal Jangan Tutup Aplikasi' : '${getx.xInt.value} / ${getx.xLength.value}',
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: getx.onPick,
-        child: const Icon(Icons.add),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton(
+            onPressed: getx.onSelectPath,
+            child: const Icon(Icons.folder),
+          ),
+          const SizedBox(height: 16),
+          FloatingActionButton(
+            onPressed: getx.onPick,
+            child: const Icon(Icons.add),
+          ),
+        ],
       ),
     );
   }
 }
 
 class MainGetx extends GetxController {
+  RxString xPath = ''.obs;
   RxInt xInt = 0.obs;
   RxInt xLength = 0.obs;
 
@@ -62,7 +87,7 @@ class MainGetx extends GetxController {
   }
 
   Future<File> doSaveImageFile(Uint8List bytes, String filename) async {
-    String dirPath = '/storage/emulated/0/Download';
+    String dirPath = xPath.value;
     File file = File('$dirPath/$filename.png');
 
     await file.writeAsBytes(bytes);
@@ -70,6 +95,21 @@ class MainGetx extends GetxController {
   }
 
   void onPick() async {
+    if (xPath.value.isEmpty) {
+      Get.dialog(
+        AlertDialog(
+          title: const Text('Dibutuhkan Lokasi Folder!'),
+          actions: [
+            ElevatedButton(
+              onPressed: Get.back,
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     List<File> xListRawData = await doPick();
     xLength.value = xListRawData.length;
     for (int i = 0; i < xListRawData.length; i++) {
@@ -93,5 +133,11 @@ class MainGetx extends GetxController {
         ],
       ),
     );
+  }
+
+  void onSelectPath() async {
+    await FilePicker.platform.getDirectoryPath().then((value) {
+      xPath.value = value ?? '';
+    });
   }
 }
